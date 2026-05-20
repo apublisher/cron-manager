@@ -1,2 +1,0 @@
-[console_scripts]
-cron-manager = cron_manager.cli:main
