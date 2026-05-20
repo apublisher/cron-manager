@@ -1,0 +1,104 @@
+Metadata-Version: 2.4
+Name: cron-manager
+Version: 0.1.0
+Summary: Framework-agnostic Linux cron manager with typed API and CLI
+Author: Your Team
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: python-crontab>=3.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=5.0.0; extra == "dev"
+
+# cron-manager
+
+A small, framework-agnostic Python package for managing Linux user cron jobs with a typed application API and an optional CLI.
+
+## Features
+
+- Read and list cron jobs
+- Create or update managed jobs by stable job identifier
+- Pause and resume jobs
+- Delete jobs
+- Idempotent manager operations
+- Backend abstraction with in-memory fake backend for tests
+- CLI support for direct terminal usage
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+Install development dependencies:
+
+```bash
+pip install -e .[dev]
+```
+
+## Quick Start (Python API)
+
+```python
+from cron_manager import CronManager
+
+manager = CronManager()
+
+result = manager.upsert_job(
+    job_id="my-app:nightly-import",
+    schedule="0 2 * * *",
+    command="/home/app/.venv/bin/python /home/app/jobs/nightly_import.py",
+    enabled=True,
+)
+
+print(result.status.value)
+print(manager.exists("my-app:nightly-import"))
+```
+
+## CLI
+
+After installation, the CLI command is available:
+
+```bash
+cron-manager --help
+```
+
+Commands:
+
+- `list`
+- `get <job_id>`
+- `exists <job_id>`
+- `upsert --id <job_id> --schedule "<cron expr>" --command "<shell cmd>" [--enabled|--disabled]`
+- `pause <job_id>`
+- `resume <job_id>`
+- `delete <job_id>`
+
+Use `--json` for machine-friendly output.
+
+Examples:
+
+```bash
+cron-manager --json list
+cron-manager upsert --id my-app:nightly-import --schedule "0 2 * * *" --command "/opt/app/run.sh" --enabled
+cron-manager pause my-app:nightly-import
+```
+
+## Validation Rules
+
+- `job_id` must match: `^[A-Za-z0-9][A-Za-z0-9._:/-]*$`
+- `schedule` must contain exactly 5 fields
+- `command` must be non-empty and single-line
+
+## Testing
+
+Tests use `FakeBackend` and do not modify a real crontab.
+
+```bash
+pytest
+```
+
+## Security Notes
+
+- Do not pass untrusted shell commands directly from end users.
+- Prefer whitelisted command templates.
+- Use absolute command paths.
+- Consider wrapping commands with `flock` to avoid overlapping runs.
